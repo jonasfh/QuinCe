@@ -13,3 +13,5 @@
 %db_database%=quince_dev
 %db_port%=3306
 %db_host%=localhost
+%git_test_branch%=master
+%slack_app_url%=https://hooks.slack.com/services/XXXXXXX/XXXXXXXXX/XXXXXXXXXXXXXXXXXXX
