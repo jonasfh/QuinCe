@@ -1,0 +1,6 @@
+################################################################
+# Cron scripts for the test server.                            #
+# Scripts should be installed using crontab -e by user centos  #
+################################################################
+
+5 5 * * * /home/centos/QuinCe/scripts/full_restore_from_prod.sh
