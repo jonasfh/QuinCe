@@ -18,13 +18,15 @@ buildscript {
    }
 }
 
+// Flyway database migration plugin:
+plugins {
+    id "org.flywaydb.flyway" version "5.0.7"
+}
+
 apply plugin: 'java'
 apply plugin: 'war'
 apply plugin: 'org.akhikhl.gretty'
 apply plugin: 'eclipse-wtp'
-
-// Flyway database migration plugin:
-apply plugin 'org.flywaydb.flyway'
 
 war {
 	webAppDirName = 'WebApp/WebContent'
@@ -35,6 +37,7 @@ gretty {
   enableNaming = true
 }
 
+println 'HHHHHHHHHHH' + buildscript.configurations.classpath
 
 repositories {
     // Use jcenter for resolving your dependencies.
@@ -113,6 +116,7 @@ eclipse {
 
 }
 
+def webContext = new XmlSlurper().parse(new File('WebApp/WebContent/META-INF/context.xml'));
 flyway {
   url = webContext.Resource.@url
   user = webContext.Resource.@username
