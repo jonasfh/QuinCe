@@ -12,6 +12,9 @@ buildscript {
    }
    dependencies {
        classpath 'org.akhikhl.gretty:gretty:2.0.0'
+
+       // Flyway migration needs the mysql connector
+       classpath 'mysql:mysql-connector-java:5.1.36'
    }
 }
 
@@ -19,6 +22,9 @@ apply plugin: 'java'
 apply plugin: 'war'
 apply plugin: 'org.akhikhl.gretty'
 apply plugin: 'eclipse-wtp'
+
+// Flyway database migration plugin:
+apply plugin 'org.flywaydb.flyway'
 
 war {
 	webAppDirName = 'WebApp/WebContent'
@@ -105,4 +111,12 @@ eclipse {
         }
     }
 
+}
+
+flyway {
+  url = webContext.Resource.@url
+  user = webContext.Resource.@username
+  password = webContext.Resource.@password
+  locations = ["classpath:flywayMigrations"]
+  baselineOnMigrate = true
 }
