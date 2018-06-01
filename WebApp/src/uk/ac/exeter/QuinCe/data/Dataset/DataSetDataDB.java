@@ -129,37 +129,25 @@ public class DataSetDataDB {
 
     try {
       if (null == datasetDataStatement) {
-        datasetDataStatement = createInsertRecordStatement(conn, record);
+        datasetDataStatement = createInsertPositionRecordStatement(conn,
+            record);
       }
 
       datasetDataStatement.setLong(1, record.getDatasetId());
       datasetDataStatement.setLong(2, DateTimeUtils.dateToLong(record.getDate()));
       datasetDataStatement.setDouble(3, record.getLongitude());
       datasetDataStatement.setDouble(4, record.getLatitude());
-      datasetDataStatement.setString(5, record.getRunType());
-      datasetDataStatement.setString(6, record.getDiagnosticValuesString());
-
-      int currentField = 6;
-      SensorsConfiguration sensorConfig = ResourceManager.getInstance().getSensorsConfiguration();
-      for (SensorType sensorType : sensorConfig.getSensorTypes()) {
-        if (sensorType.isUsedInCalculation()) {
-          currentField++;
-          Double sensorValue = record.getSensorValue(sensorType.getName());
-          if (null == sensorValue) {
-            datasetDataStatement.setNull(currentField, Types.DOUBLE);
-          } else {
-            datasetDataStatement.setDouble(currentField, sensorValue);
-          }
-        }
-      }
-
       datasetDataStatement.execute();
 
       CalculationDB calculationDB = CalculationDBFactory.getCalculationDB();
 
       createdKeys = datasetDataStatement.getGeneratedKeys();
-      while (createdKeys.next()) {
-        calculationDB.createCalculationRecord(conn, createdKeys.getLong(1));
+      // A single key can be generated from this insert
+      if (createdKeys.first()) {
+        long dataset_data_id = createdKeys.getLong(1);
+        storeIntakeRecord(conn, record, dataset_data_id);
+        storeEquilibratorRecord(conn, record, dataset_data_id);
+        calculationDB.createCalculationRecord(conn, dataset_data_id);
       }
 
     } catch (SQLException e) {
@@ -169,6 +157,105 @@ public class DataSetDataDB {
     }
 
     return datasetDataStatement;
+  }
+
+  /**
+   * Internal helper function to store data in the dataset_data_water_at_intake
+   * - table.
+   *
+   * @param conn
+   * @param record
+   * @param dataset_data_id
+   * @throws MissingParamException
+   * @throws DataSetException
+   * @throws DatabaseException
+   * @throws NoSuchCategoryException
+   */
+  private static void storeIntakeRecord(Connection conn,
+      DataSetRawDataRecord record, long dataset_data_id)
+      throws MissingParamException, DataSetException, DatabaseException,
+      NoSuchCategoryException {
+
+    MissingParam.checkMissing(conn, "conn");
+    MissingParam.checkMissing(record, "record");
+
+    if (!record.isMeasurement()) {
+      throw new DataSetException("Record is not a measurement");
+    }
+    PreparedStatement intakeDataStatement = null;
+    try {
+      intakeDataStatement = createInsertIntakeRecordStatement(
+          conn, record);
+
+      intakeDataStatement.setLong(1, dataset_data_id);
+      Double sensorValue = record.getSensorValue("Intake Temperature");
+      if (null == sensorValue) {
+        intakeDataStatement.setNull(2, Types.DOUBLE);
+      } else {
+        intakeDataStatement.setDouble(2, sensorValue);
+      }
+
+      intakeDataStatement.execute();
+    } catch (SQLException e) {
+      throw new DatabaseException("Error storing dataset record", e);
+    } finally {
+      DatabaseUtils.closeStatements(intakeDataStatement);
+    }
+  }
+
+  /**
+   * Internal helper function to store data in the
+   * dataset_data_water_at_equilibrator - table.
+   *
+   * @param conn
+   * @param record
+   * @param dataset_data_id
+   * @throws MissingParamException
+   * @throws DataSetException
+   * @throws DatabaseException
+   * @throws NoSuchCategoryException
+   */
+  private static void storeEquilibratorRecord(Connection conn,
+      DataSetRawDataRecord record, long dataset_data_id)
+      throws MissingParamException, DataSetException, DatabaseException,
+      NoSuchCategoryException {
+
+    MissingParam.checkMissing(conn, "conn");
+    MissingParam.checkMissing(record, "record");
+    if (!record.isMeasurement()) {
+      throw new DataSetException("Record is not a measurement");
+    }
+    PreparedStatement equilibratorDataStatement = null;
+    try {
+      equilibratorDataStatement = createInsertEquilibratorRecordStatement(
+          conn, record);
+      int currentField = 1;
+      equilibratorDataStatement.setLong(currentField++, dataset_data_id);
+      equilibratorDataStatement.setString(currentField++, record.getRunType());
+      equilibratorDataStatement.setString(currentField++,
+          record.getDiagnosticValuesString());
+
+      SensorsConfiguration sensorConfig = ResourceManager.getInstance()
+          .getSensorsConfiguration();
+      for (SensorType sensorType : sensorConfig.getSensorTypes()) {
+        if (sensorType.isUsedInCalculation()
+            && !"Intake Temperature".equals(sensorType.getName())) {
+          Double sensorValue = record.getSensorValue(sensorType.getName());
+          if (null == sensorValue) {
+            equilibratorDataStatement.setNull(currentField, Types.DOUBLE);
+          } else {
+            equilibratorDataStatement.setDouble(currentField, sensorValue);
+          }
+          currentField++;
+        }
+      }
+
+      equilibratorDataStatement.execute();
+    } catch (SQLException e) {
+      throw new DatabaseException("Error storing dataset record", e);
+    } finally {
+      DatabaseUtils.closeStatements(equilibratorDataStatement);
+    }
   }
 
   /**
@@ -435,7 +522,9 @@ public class DataSetDataDB {
    * @throws MissingParamException If any required parameters are missing
    * @throws SQLException If the statement cannot be created
    */
-  private static PreparedStatement createInsertRecordStatement(Connection conn, DataSetRawDataRecord record) throws MissingParamException, SQLException {
+  private static PreparedStatement createInsertPositionRecordStatement(
+      Connection conn,
+      DataSetRawDataRecord record) throws MissingParamException, SQLException {
 
     List<String> fieldNames = new ArrayList<String>();
 
@@ -443,17 +532,59 @@ public class DataSetDataDB {
     fieldNames.add("date");
     fieldNames.add("longitude");
     fieldNames.add("latitude");
+    return DatabaseUtils.createInsertStatement(conn, "dataset_data_positions",
+        fieldNames, Statement.RETURN_GENERATED_KEYS);
+  }
+
+  /**
+   * @param conn
+   * @param record
+   * @return
+   * @throws MissingParamException
+   * @throws SQLException
+   */
+  private static PreparedStatement createInsertIntakeRecordStatement(
+      Connection conn, DataSetRawDataRecord record)
+      throws MissingParamException, SQLException {
+
+    List<String> fieldNames = new ArrayList<String>();
+
+    fieldNames.add("dataset_data_positions_id");
+    fieldNames.add("intake_temperature");
+    return DatabaseUtils.createInsertStatement(conn,
+        "dataset_data_water_at_intake", fieldNames,
+        Statement.RETURN_GENERATED_KEYS);
+  }
+
+  /**
+   * @param conn
+   * @param record
+   * @return
+   * @throws MissingParamException
+   * @throws SQLException
+   */
+  private static PreparedStatement createInsertEquilibratorRecordStatement(
+      Connection conn, DataSetRawDataRecord record)
+      throws MissingParamException, SQLException {
+
+    List<String> fieldNames = new ArrayList<String>();
+
+    fieldNames.add("dataset_data_positions_id");
     fieldNames.add("run_type");
     fieldNames.add("diagnostic_values");
 
-    SensorsConfiguration sensorConfig = ResourceManager.getInstance().getSensorsConfiguration();
+    SensorsConfiguration sensorConfig = ResourceManager.getInstance()
+        .getSensorsConfiguration();
     for (SensorType sensorType : sensorConfig.getSensorTypes()) {
-      if (sensorType.isUsedInCalculation()) {
+      if (sensorType.isUsedInCalculation()
+          && !"Intake Temperature".equals(sensorType.getName())) {
         fieldNames.add(sensorType.getDatabaseFieldName());
       }
     }
 
-    return DatabaseUtils.createInsertStatement(conn, "dataset_data", fieldNames, Statement.RETURN_GENERATED_KEYS);
+    return DatabaseUtils.createInsertStatement(conn,
+        "dataset_data_water_at_equilibrator", fieldNames,
+        Statement.RETURN_GENERATED_KEYS);
   }
 
   /**
