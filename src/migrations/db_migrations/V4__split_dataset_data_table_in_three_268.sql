@@ -2,12 +2,15 @@ ALTER TABLE dataset_data RENAME dataset_data_positions;
 
 CREATE TABLE dataset_data_water_at_intake(
 id int NOT NULL auto_increment PRIMARY KEY,
-dataset_data_positions_id int NOT NULL REFERENCES dataset_data_positions(id)
-ON UPDATE RESTRICT ON DELETE CASCADE,
+dataset_data_positions_id INT NOT NULL REFERENCES dataset_data_positions(id)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
 intake_temperature DOUBLE NULL,
 created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 modified DATETIME
 );
+
+CREATE INDEX dataset_data_positions_ix
+ON dataset_data_water_at_intake(dataset_data_positions_id);
 
 CREATE TRIGGER `intake_insert_trigger`
 BEFORE INSERT ON  `dataset_data_water_at_intake`
@@ -17,15 +20,18 @@ CREATE TRIGGER `intake_update_trigger`
 BEFORE UPDATE ON  `dataset_data_water_at_intake`
 FOR EACH ROW SET NEW.modified=NOW();
 
-INSERT INTO dataset_data_water_at_intake (dataset_data_positions_id, intake_temperature, created)
+INSERT INTO dataset_data_water_at_intake
+(dataset_data_positions_id,intake_temperature, created)
 SELECT id, intake_temperature, created from dataset_data_positions;
 
 CREATE TABLE dataset_data_water_at_equilibrator(
 id int NOT NULL auto_increment PRIMARY KEY,
-dataset_data_positions_id int NOT NULL REFERENCES dataset_data_positions(id)
-ON UPDATE RESTRICT ON DELETE CASCADE,
+dataset_data_positions_id INT NOT NULL REFERENCES dataset_data_positions(id)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
+shifted_dataset_data_positions_id INT NOT NULL REFERENCES dataset_data_positions(id)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
 run_type varchar(45) NOT NULL,
-diagnostic_values text NULL,
+diagnostic_values TEXT NULL,
 salinity DOUBLE NULL,
 equilibrator_temperature DOUBLE NULL,
 equilibrator_pressure_absolute DOUBLE NULL,
@@ -36,6 +42,11 @@ co2 DOUBLE NULL,
 created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 modified DATETIME
 );
+
+CREATE INDEX dataset_data_positions_ix
+ON dataset_data_water_at_equilibrator(dataset_data_positions_id);
+CREATE INDEX shifted_dataset_data_positions_ix ON
+dataset_data_water_at_equilibrator(shifted_dataset_data_positions_id);
 
 CREATE TRIGGER `equilibrator_insert_trigger`
 BEFORE INSERT ON  `dataset_data_water_at_equilibrator`
@@ -68,7 +79,7 @@ ddq.equilibrator_pressure_absolute, ddq.equilibrator_pressure_differential,
 ddq.atmospheric_pressure, ddq.xh2o, ddq.co2, ddp.created, ddp.modified
 FROM dataset_data_positions ddp
 INNER JOIN dataset_data_water_at_equilibrator ddq
-ON (ddp.id=ddq.dataset_data_positions_id)
+ON (ddp.id=ddq.shifted_dataset_data_positions_id)
 INNER JOIN dataset_data_water_at_intake ddi
 ON (ddp.id=ddi.dataset_data_positions_id);
 

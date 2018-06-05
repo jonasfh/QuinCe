@@ -67,7 +67,17 @@ then
   fi
   mysql -u$db_user -p"$db_password" $db_name <<EOF
     DELETE FROM equilibrator_pco2 WHERE measurement_id IN (SELECT id FROM dataset_data WHERE dataset_id IN (SELECT id FROM dataset WHERE instrument_id = $instrument_id));
-    DELETE FROM dataset_data WHERE dataset_id IN (SELECT id FROM dataset WHERE instrument_id = $instrument_id);
+    DELETE FROM dataset_data_water_at_intake WHERE dataset_data_positions_id IN (
+      SELECT d.id FROM dataset_data_positions ddp
+      INNER JOIN dataset d ON ddp.dataset_id = d.id
+      WHERE d.instrument_id = $instrument_id
+    );
+    DELETE FROM dataset_data_water_at_equilibrator WHERE shifted_dataset_data_positions_id IN (
+      SELECT d.id FROM dataset_data_positions ddp
+      INNER JOIN dataset d ON ddp.dataset_id = d.id
+      WHERE d.instrument_id = $instrument_id
+    );
+    DELETE FROM dataset_data_positions WHERE dataset_id IN (SELECT id FROM dataset WHERE instrument_id = $instrument_id);
     DELETE FROM calibration_data WHERE dataset_id IN (SELECT id FROM dataset WHERE instrument_id = $instrument_id);
     DELETE FROM dataset WHERE instrument_id = $instrument_id;
 
