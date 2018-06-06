@@ -61,6 +61,11 @@ public class Instrument {
   private int averagingMode = DataSetRawData.AVG_MODE_NONE;
 
   /**
+   * Intake to equilibrator time offset
+   */
+  private int timeMeasurementDelay = 0;
+
+  /**
    * Platform code
    */
   private String platformCode = null;
@@ -78,7 +83,10 @@ public class Instrument {
    * @param averagingMode The averaging mode
    * @param platformCode The platform code
    */
-  public Instrument(long databaseId, long ownerId, String name, InstrumentFileSet fileDefinitions, SensorAssignments sensorAssignments, int preFlushingTime, int postFlushingTime, int minimumWaterFlow, int averagingMode, String platformCode) {
+  public Instrument(long databaseId, long ownerId, String name,
+      InstrumentFileSet fileDefinitions, SensorAssignments sensorAssignments,
+      int preFlushingTime, int postFlushingTime, int minimumWaterFlow,
+      int averagingMode, String platformCode, int timeMeasurementDelay) {
     this.databaseID = databaseId;
     this.ownerId = ownerId;
     this.name = name;
@@ -89,6 +97,7 @@ public class Instrument {
     this.minimumWaterFlow = minimumWaterFlow;
     this.averagingMode = averagingMode;
     this.setPlatformCode(platformCode);
+    this.setTimeMeasurementDelay(timeMeasurementDelay);
 
     //TODO Validate averaging mode
   }
@@ -105,7 +114,10 @@ public class Instrument {
    * @param averagingMode The averaging mode
    * @param platformCode The platform code
    */
-  public Instrument(User owner, String name, InstrumentFileSet fileDefinitions, SensorAssignments sensorAssignments, int preFlushingTime, int postFlushingTime, int minimumWaterFlow, int averagingMode, String platformCode) {
+  public Instrument(User owner, String name, InstrumentFileSet fileDefinitions,
+      SensorAssignments sensorAssignments, int preFlushingTime,
+      int postFlushingTime, int minimumWaterFlow, int averagingMode,
+      String platformCode, int timeMeasurementDelay) {
     this.ownerId = owner.getDatabaseID();
     this.name = name;
     this.fileDefinitions = fileDefinitions;
@@ -115,6 +127,7 @@ public class Instrument {
     this.minimumWaterFlow = minimumWaterFlow;
     this.averagingMode = averagingMode;
     this.platformCode = platformCode;
+    this.setTimeMeasurementDelay(timeMeasurementDelay);
 
     //TODO Validate averaging mode
   }
@@ -245,5 +258,13 @@ public class Instrument {
    */
   public void setPlatformCode(String platformCode) {
     this.platformCode = platformCode;
+  }
+
+  public int getTimeMeasurementDelay() {
+    return timeMeasurementDelay;
+  }
+
+  public void setTimeMeasurementDelay(int timeMeasurementDelay) {
+    this.timeMeasurementDelay = timeMeasurementDelay;
   }
 }

@@ -335,6 +335,11 @@ public class NewInstrumentBean extends FileUploadBean {
   private int runTypeColumn = -1;
 
   /**
+   *
+   */
+  private int timeMeasurementDelay = 0;
+
+  /**
    * Begin a new instrument definition
    * @return The navigation to the start page
    */
@@ -1725,7 +1730,7 @@ public class NewInstrumentBean extends FileUploadBean {
       sensorAssignments.put(SensorType.getRunTypeSensorType(), hashSet);
       Instrument instrument = new Instrument(getUser(), instrumentName, instrumentFiles,
         sensorAssignments, preFlushingTime, postFlushingTime, minimumWaterFlow, averagingMode,
-        platformCode);
+          platformCode, timeMeasurementDelay);
       InstrumentDB.storeInstrument(getDataSource(), instrument);
 
       // Reinitialise beans to update their instrument lists
@@ -1812,4 +1817,12 @@ public class NewInstrumentBean extends FileUploadBean {
     public Map<String, Integer> getAveragingModes() {
       return DataSetRawData.averagingModes();
     }
+
+  public int getTimeMeasurementDelay() {
+    return timeMeasurementDelay;
+  }
+
+  public void setTimeMeasurementDelay(int timeMeasurementDelay) {
+    this.timeMeasurementDelay = timeMeasurementDelay;
+  }
 }

@@ -54,8 +54,9 @@ public class InstrumentDB {
    */
   private static final String CREATE_INSTRUMENT_STATEMENT = "INSERT INTO instrument ("
       + "owner, name," // 2
-      + "pre_flushing_time, post_flushing_time, minimum_water_flow, averaging_mode, platform_code" // 7
-      + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+      + "pre_flushing_time, post_flushing_time, minimum_water_flow, " // 5
+      + "averaging_mode, platform_code, time_measurement_delay" // 8
+      + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
   /**
    * Statement for inserting a file definition record
@@ -127,7 +128,8 @@ public class InstrumentDB {
    */
   private static final String GET_INSTRUMENT_QUERY = "SELECT "
       + "name, owner, " // 2
-      + "pre_flushing_time, post_flushing_time, minimum_water_flow, averaging_mode, platform_code " // 7
+      + "pre_flushing_time, post_flushing_time, minimum_water_flow, " // 5
+      + "averaging_mode, platform_code, time_measurement_delay " // 8
       + "FROM instrument WHERE id = ?";
 
   /**
@@ -294,7 +296,9 @@ public class InstrumentDB {
     stmt.setInt(4, instrument.getPostFlushingTime()); // post_flushing_time
     stmt.setInt(5, instrument.getMinimumWaterFlow()); // minimum_water_flow
     stmt.setInt(6, instrument.getAveragingMode()); // averaging_mode
-    stmt.setString(7, instrument.getPlatformCode()); // averaging_mode
+    stmt.setString(7, instrument.getPlatformCode()); // Platform code
+    stmt.setInt(8, instrument.getTimeMeasurementDelay()); // Intake to
+                                                          // equilibrator offset
 
     return stmt;
   }
@@ -583,6 +587,7 @@ public class InstrumentDB {
       String platformCode;
       InstrumentFileSet files;
       SensorAssignments sensorAssignments;
+      int timeMeasurementDelay;
 
 
       // Get the raw instrument data
@@ -604,6 +609,7 @@ public class InstrumentDB {
         minimumWaterFlow = instrumentRecord.getInt(5);
         averagingMode = instrumentRecord.getInt(6);
         platformCode = instrumentRecord.getString(7);
+        timeMeasurementDelay = instrumentRecord.getInt(8);
 
 
         // Now get the file definitions
@@ -612,7 +618,10 @@ public class InstrumentDB {
         // Now the sensor assignments
         sensorAssignments = getSensorAssignments(conn, files, sensorConfiguration, runTypeConfiguration);
 
-        instrument = new Instrument(instrumentId, owner, name, files, sensorAssignments, preFlushingTime, postFlushingTime, minimumWaterFlow, averagingMode, platformCode);
+        instrument = new Instrument(instrumentId, owner, name, files,
+            sensorAssignments, preFlushingTime, postFlushingTime,
+            minimumWaterFlow, averagingMode, platformCode,
+            timeMeasurementDelay);
       }
 
     } catch (SQLException e) {
