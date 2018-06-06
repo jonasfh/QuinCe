@@ -72,7 +72,7 @@ public class DataSetDB {
   /**
    * Statement to delete all records for a given dataset
    */
-  private static final String DELETE_DATASET_QUERY = "DELETE FROM dataset_data "
+  private static final String DELETE_DATASET_POSITIONS_QUERY = "DELETE FROM dataset_data_positions "
       + "WHERE dataset_id = ?";
 
   /**
@@ -375,7 +375,7 @@ public class DataSetDB {
     PreparedStatement stmt = null;
 
     try {
-      stmt = conn.prepareStatement(DELETE_DATASET_QUERY);
+      stmt = conn.prepareStatement(DELETE_DATASET_POSITIONS_QUERY);
       stmt.setLong(1, dataSet.getId());
 
       stmt.execute();
