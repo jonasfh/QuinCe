@@ -231,6 +231,7 @@ public class DataSetDataDB {
           conn, record);
       int currentField = 1;
       equilibratorDataStatement.setLong(currentField++, dataset_data_id);
+      equilibratorDataStatement.setLong(currentField++, dataset_data_id);
       equilibratorDataStatement.setString(currentField++, record.getRunType());
       equilibratorDataStatement.setString(currentField++,
           record.getDiagnosticValuesString());
@@ -570,6 +571,7 @@ public class DataSetDataDB {
     List<String> fieldNames = new ArrayList<String>();
 
     fieldNames.add("dataset_data_positions_id");
+    fieldNames.add("shifted_dataset_data_positions_id");
     fieldNames.add("run_type");
     fieldNames.add("diagnostic_values");
 
