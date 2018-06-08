@@ -66,6 +66,11 @@ public class DataSetDataDB {
       + " MIN(longitude), MIN(latitude), MAX(longitude), MAX(latitude)"
       + " FROM dataset_data WHERE dataset_id = ?";
 
+
+  // select id from dataset_data_positions ddp2 where ddp2.date between
+  // 1439282761000 and 1439282761000+120000-1 order by
+  // abs(ddp2.date-(1439282761000+60000))
+
   /**
    * The name of the ID column
    */
@@ -914,4 +919,23 @@ public class DataSetDataDB {
     return result;
   }
 
+  public static void timeShiftMeasurement(Connection conn, Long dataset_id,
+      int offset) {
+    Statement stmt = null;
+    try {
+       String update = "UPDATE dataset_data_water_at_equilibrator ddq"
+          + " JOIN dataset_data_positions ddp"
+          + " ON (ddq.dataset_data_positions_id= "
+          + " (SELECT ddp2.id FROM dataset_data_positions ddp2 WHERE ddp2.date "
+          + " BETWEEN ddp.date AND ddp.date + (" + offset + " * 2)-1 "
+          + " ORDER BY abs(ddp2.date-(ddp.date+" + offset + ")) LIMIT 1))"
+          + " WHERE ddp.dataset_id = " + dataset_id
+          + " SET ddq.shifted_dataset_data_positions_id = ddp.id";
+      stmt = conn.createStatement();
+      stmt.executeQuery(update);
+    } catch (Exception e) {
+      System.err.println("ERROR: " + e.getMessage());
+    }
+
+  }
 }

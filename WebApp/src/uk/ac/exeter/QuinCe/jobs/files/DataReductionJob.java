@@ -16,6 +16,8 @@ import uk.ac.exeter.QuinCe.data.Dataset.DataSet;
 import uk.ac.exeter.QuinCe.data.Dataset.DataSetDB;
 import uk.ac.exeter.QuinCe.data.Dataset.DataSetDataDB;
 import uk.ac.exeter.QuinCe.data.Dataset.DataSetRawDataRecord;
+import uk.ac.exeter.QuinCe.data.Instrument.Instrument;
+import uk.ac.exeter.QuinCe.data.Instrument.InstrumentDB;
 import uk.ac.exeter.QuinCe.data.Instrument.Calibration.CalibrationSet;
 import uk.ac.exeter.QuinCe.data.Instrument.Calibration.ExternalStandardDB;
 import uk.ac.exeter.QuinCe.jobs.InvalidJobParametersException;
@@ -70,6 +72,17 @@ public class DataReductionJob extends Job {
 
       DataSet dataSet = DataSetDB.getDataSet(conn, Long.parseLong(parameters.get(ID_PARAM)));
       DataSetDB.setDatasetStatus(conn, dataSet, DataSet.STATUS_DATA_REDUCTION);
+
+      // Time shift data values at the equilibrator, to align values with the
+      // measured temperature at the water intake.
+      Instrument instrument = InstrumentDB.getInstrument(conn,
+          dataSet.getInstrumentId(), resourceManager.getSensorsConfiguration(),
+          resourceManager.getRunTypeCategoryConfiguration());
+      if (instrument.getTimeMeasurementDelay() > 0) {
+        DataSetDataDB.timeShiftMeasurement(conn, dataSet.getId(),
+            instrument.getTimeMeasurementDelay());
+      }
+
       List<DataSetRawDataRecord> measurements = DataSetDataDB.getMeasurements(conn, dataSet);
       CalibrationDataSet calibrationRecords = CalibrationDataDB.getCalibrationRecords(conn, dataSet);
       CalibrationSet externalStandards = ExternalStandardDB.getInstance().getStandardsSet(conn, dataSet.getInstrumentId(), measurements.get(0).getDate());
