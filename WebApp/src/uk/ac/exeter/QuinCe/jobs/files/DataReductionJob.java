@@ -1,6 +1,7 @@
 package uk.ac.exeter.QuinCe.jobs.files;
 
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +118,20 @@ public class DataReductionJob extends Job {
         JobManager.addJob(dataSource, JobManager.getJobOwner(dataSource, id), AutoQCJob.class.getCanonicalName(), jobParams);
 
         conn.commit();
+      }
+
+      // Analyze data tables to speed up join queries
+      Statement stmt = null;
+      try {
+        stmt = conn.createStatement();
+        stmt.execute("ANALYZE TABLE dataset_data_positions");
+        stmt.execute("ANALYZE TABLE dataset_data_water_at_intake");
+        stmt.execute("ANALYZE TABLE dataset_data_water_at_equilibrator");
+        stmt.close();
+        conn.commit();
+      } catch (Exception e) {
+        System.err.println("Somthing failed with the ANALYZE TABLE statements: "
+            + e.getMessage());
       }
 
     } catch (Exception e) {
