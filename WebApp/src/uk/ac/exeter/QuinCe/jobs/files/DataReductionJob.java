@@ -79,7 +79,8 @@ public class DataReductionJob extends Job {
           dataSet.getInstrumentId(), resourceManager.getSensorsConfiguration(),
           resourceManager.getRunTypeCategoryConfiguration());
       if (instrument.getTimeMeasurementDelay() > 0) {
-        DataSetDataDB.timeShiftMeasurement(conn, dataSet.getId(),
+        List<Long> ids = DataSetDataDB.getMeasurementIds(conn, dataSet.getId());
+        DataSetDataDB.timeShiftMeasurement(conn, ids,
             instrument.getTimeMeasurementDelay());
       }
 

@@ -919,23 +919,31 @@ public class DataSetDataDB {
     return result;
   }
 
-  public static void timeShiftMeasurement(Connection conn, Long dataset_id,
-      int offset) {
-    Statement stmt = null;
+  public static void timeShiftMeasurement(Connection conn, List<Long> ids,
+      int offset) throws DatabaseException {
+    PreparedStatement stmt = null;
     try {
-       String update = "UPDATE dataset_data_water_at_equilibrator ddq"
-          + " JOIN dataset_data_positions ddp"
-          + " ON (ddq.dataset_data_positions_id= "
-          + " (SELECT ddp2.id FROM dataset_data_positions ddp2 WHERE ddp2.date "
-          + " BETWEEN ddp.date AND ddp.date + (" + offset + " * 2)-1 "
-          + " ORDER BY abs(ddp2.date-(ddp.date+" + offset + ")) LIMIT 1))"
-          + " WHERE ddp.dataset_id = " + dataset_id
-          + " SET ddq.shifted_dataset_data_positions_id = ddp.id";
-      stmt = conn.createStatement();
-      stmt.executeQuery(update);
-    } catch (Exception e) {
-      System.err.println("ERROR: " + e.getMessage());
+      int offset_ms = offset * 1000; // in milliseconds
+      String update = "UPDATE dataset_data_water_at_equilibrator q SET "
+          + " q.shifted_dataset_data_positions_id = (SELECT p2.id FROM "
+          + " dataset_data_positions p, dataset_data_positions p2 WHERE p2.date "
+          + " BETWEEN p.date - ((? * 2)-1) AND p.date AND p.id = ? "
+          + " ORDER BY abs(p2.date - (p.date - ?)) LIMIT 1)"
+          + " WHERE q.dataset_data_positions_id = ?";
+      stmt = conn.prepareStatement(update);
+      for (Long id : ids) {
+        stmt.setInt(1, offset_ms);
+        stmt.setLong(2, id);
+        stmt.setInt(3, offset_ms);
+        stmt.setLong(4, id);
+        stmt.execute();
+      }
+      conn.commit();
+    } catch (SQLException e) {
+      throw new DatabaseException(
+          "Error applying time measurement delay on equilibrator data", e);
+    } finally {
+      DatabaseUtils.closeStatements(stmt);
     }
-
   }
 }
