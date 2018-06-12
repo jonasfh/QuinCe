@@ -85,8 +85,13 @@ ON (ddp.id=ddi.dataset_data_positions_id);
 ALTER TABLE instrument ADD COLUMN time_measurement_delay INT NOT NULL
 DEFAULT 0 AFTER platform_code;
 
+-- Allow quick searches on dates and positions
+CREATE INDEX positions_ix ON dataset_data_positions(latitude, longitude, date);
+CREATE INDEX positions_lat_lon_ix ON dataset_data_positions(latitude, longitude);
+CREATE INDEX positions_dates_ix ON dataset_data_positions(date);
+
+
 -- Analyze tables after the updates
 ANALYZE TABLE dataset_data_positions;
 ANALYZE TABLE dataset_data_water_at_intake;
 ANALYZE TABLE dataset_data_water_at_equilibrator;
-
